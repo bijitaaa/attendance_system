@@ -1,20 +1,26 @@
-<h1>Attendance Records for {{ teacher.name }}</h1>
+<h2>Attendance by Subject</h2>
 
-{% for subject, dates in attendance_by_subject.items %}
-<h2>Subject: {{ subject }}</h2>
-    {% for date, records in dates.items %}
-    <h3>Date: {{ date }}</h3>
-    <table border="1">
-        <tr>
-            <th>Student Name</th>
-            <th>Status</th>
-        </tr>
-        {% for record in records %}
-        <tr>
-            <td>{{ record.student.name }}</td>
-            <td>{{ record.status }}</td>
-        </tr>
-        {% endfor %}
+{% for subject, attendance_dates in attendance_by_subject.items %}
+    <h3>{{ subject }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for date, records in attendance_dates.items %}
+                <tr>
+                    <td>{{ date }}</td>
+                    <td>
+                        {% for record in records %}
+                            <div>{{ record.student.name }} - {{ record.status }}</div>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
     </table>
-    {% endfor %}
 {% endfor %}

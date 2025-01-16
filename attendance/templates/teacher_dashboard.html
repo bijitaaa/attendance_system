@@ -74,8 +74,9 @@
     {% endif %}
 
     <div class="button-container">
-        <button onclick="window.location.href='{% url 'view_attendance' %}'">View Attendance</button>
+        <button onclick="window.location.href='{% url 'attendance_by_subject' %}'">View Attendance</button>
         <button onclick="window.location.href='{% url 'register_student' %}'">Register Student</button>
+        <button onclick="window.location.href='{% url 'capture_face' %}'">Capture</button>
     </div>
 </body>
 </html>

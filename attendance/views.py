@@ -11,6 +11,7 @@ from .utils import get_face_encoding_from_frame, match_face
 import cv2
 import numpy as np
 from collections import defaultdict
+from django.contrib.auth.decorators import login_required
 
 
 def capture_face(request):
@@ -131,39 +132,37 @@ def register_student(request):
 
     if request.method == 'POST':
         form = StudentRegistrationForm(request.POST, request.FILES)
+
         if form.is_valid():
-            student = form.save(commit=False)
-            student.subject = teacher  # Assign the logged-in teacher to the student's subject
-            
-            # Process the student's photo and extract facial encoding
-            photo = form.cleaned_data.get('photo')
-            if photo:
-                # Convert the image to a format usable by OpenCV
-                image = cv2.imdecode(np.frombuffer(photo.read(), np.uint8), cv2.IMREAD_COLOR)
-
-                # Get the face encoding from the image
-                encoding = get_face_encoding_from_frame(image)
-                if encoding is not None:
-                    student.facial_encoding = encoding.tobytes()  # Store the encoding as binary in the database
-                else:
-                    messages.error(request, "No face detected in the photo. Please try again.")
-                    return redirect('register_student')
-
+            rollno = form.cleaned_data.get('rollno')  # Get roll number from form
             try:
-                student.save()  # Save the student to the database
-                messages.success(request, f"Student {student.name} has been registered successfully!")
-                return redirect('teacher_dashboard')  # Redirect to the teacher dashboard
+                # Check if the student already exists
+                student, created = Student.objects.get_or_create(rollno=rollno, defaults=form.cleaned_data)
+                if not created:
+                    messages.info(request, f"Student {student.name} already exists. Adding the subject.")
             except Exception as e:
-                messages.error(request, f"Error while registering student: {str(e)}")
-                return redirect('register_student')  # Redirect back to the registration page
+                messages.error(request, f"Error while checking/creating student: {str(e)}")
+                return redirect('register_student')
+
+            # Add the teacher's subject to the student's subjects
+            student.subjects.add(teacher.subject)
+            student.save()  # Save again to update ManyToMany relationship
+
+            messages.success(request, f"Student {student.name} has been successfully registered under {teacher.subject.name}!")
+            return redirect('teacher_dashboard')  # Redirect to the teacher dashboard
+
         else:
-            # If form is not valid, show the errors
+            # Log the form errors for debugging
+            print(form.errors)  # Debugging output
             messages.error(request, "Form is not valid. Please check the input fields.")
             return redirect('register_student')
+
     else:
         form = StudentRegistrationForm()
 
     return render(request, 'register_student.html', {'form': form})
+
+
 
 def view_attendance(request):
     teacher_id = request.session.get('teacher_id')  # Fetch the logged-in teacher's ID
@@ -183,12 +182,15 @@ def view_attendance(request):
 
     return render(request, 'view_attendance.html', {'attendance_records': attendance_records, 'teacher': teacher})
 
+@login_required
 def view_attendance_by_subject(request):
-    teacher_id = request.session.get('teacher_id')  # Fetch the logged-in teacher's ID
+    # Fetch the logged-in teacher's ID from the session
+    teacher_id = request.session.get('teacher_id')
     if not teacher_id:
-        return redirect('teacher_login')
+        return redirect('teacher_login')  # Redirect to login if teacher is not logged in
 
-    teacher = Teacher.objects.get(id=teacher_id)  # Get the Teacher instance
+    # Get the Teacher instance based on the teacher_id
+    teacher = Teacher.objects.get(id=teacher_id)
 
     # Get the subjects taught by the teacher
     subjects_taught = teacher.subjects.all()
@@ -196,14 +198,19 @@ def view_attendance_by_subject(request):
     # Initialize a dictionary to hold attendance by subject and date
     attendance_by_subject = defaultdict(lambda: defaultdict(list))
 
-    # Iterate over subjects and group attendance records
+    # Iterate over subjects and group attendance records by subject and date
     for subject in subjects_taught:
+        # Get the students who are enrolled in this subject
         students = Student.objects.filter(subjects=subject)
-        attendance_records = Attendance.objects.filter(student__in=students).order_by('-date')
 
+        # Get the attendance records for those students, ordered by date
+        attendance_records = Attendance.objects.filter(student__in=students, subject=subject).order_by('-date')
+
+        # Group the attendance records by subject and date
         for record in attendance_records:
             attendance_by_subject[subject.name][record.date].append(record)
 
+    # Pass the attendance data to the template
     return render(request, 'attendance_by_subject.html', {
         'teacher': teacher,
         'attendance_by_subject': attendance_by_subject,

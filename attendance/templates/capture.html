@@ -44,7 +44,7 @@
             border-radius: 5px;
         }
         button {
-            position: fixed;
+            position: fixed; /* Absolute positioning */
             bottom: 20px; /* 20px from the bottom */
             left: 50%; /* Center horizontally */
             transform: translateX(-50%); /* Adjust for perfect centering */
@@ -60,7 +60,7 @@
             background-color: #0056b3;
         }
         #status {
-            margin-top: 20px;
+            margin-top: 10px;
             font-size: 16px;
             color: #555;
         }
@@ -69,14 +69,14 @@
 <body>
     <header>
         <h1>Face Capture</h1>
-        <a href="{% url 'teacher_login' %}">Teacher Login</a>
+        <a href="{% url 'teacher_dashboard' %}" class="back-button">Back to Dashboard</a>
     </header>
     <main>
-      <h1>Live Video Feed</h1>
-      <video id="video" autoplay muted></video>
-      <canvas id="canvas" style="display:none;"></canvas>
-      <p id="status"></p> <!-- Moved this above the capture button -->
-      <button id="capture-btn">Capture</button>
+        <h1>Live Video Feed</h1>
+        <video id="video" autoplay muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <button id="capture-btn">Capture</button>
+        <p id="status"></p>
     </main>
 
     <script>

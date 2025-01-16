@@ -21,9 +21,9 @@ from attendance import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('capture/', views.capture_face, name='capture_face'),
-    path('login/', views.teacher_login, name='teacher_login'),
+    path('', views.teacher_login, name='teacher_login'),
     path('dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('register_student/', views.register_student, name='register_student'),
-    path('attendance/', views.view_attendance, name='view_attendance'),
-    path('attendance/subject/', views.view_attendance_by_subject, name='attendance_by_subject'),
+    # path('attendance/', views.view_attendance, name='view_attendance'),
+    path('attendance/', views.view_attendance_by_subject, name='attendance_by_subject'),
 ]

@@ -12,7 +12,7 @@ class TeacherAdmin(admin.ModelAdmin):
 
 
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'rollno', 'get_subjects')  # Use a method to display subjects
+    list_display = ('name', 'rollno', 'get_subjects')  
     list_filter = ('subjects',)  # Use the ManyToManyField for filtering
 
     def get_subjects(self, obj):
