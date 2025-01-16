@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Capture</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            width: 100%;
+            background-color: #f8f8f8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        header a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 16px;
+        }
+        header a:hover {
+            text-decoration: underline;
+        }
+        main {
+            text-align: center;
+            padding: 20px;
+            position: relative; /* To position the button at the bottom */
+        }
+        video {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            position: fixed;
+            bottom: 20px; /* 20px from the bottom */
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%); /* Adjust for perfect centering */
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Face Capture</h1>
+        <a href="{% url 'teacher_login' %}">Teacher Login</a>
+    </header>
+    <main>
+      <h1>Live Video Feed</h1>
+      <video id="video" autoplay muted></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+      <p id="status"></p> <!-- Moved this above the capture button -->
+      <button id="capture-btn">Capture</button>
+    </main>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const status = document.getElementById('status');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error("Error accessing camera: ", err);
+                status.innerText = "Unable to access the camera.";
+            });
+
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the image to base64 format
+            const imageData = canvas.toDataURL('image/jpeg');
+            fetch('/capture/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                status.innerText = data.message;
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                status.innerText = "An error occurred.";
+            });
+        });
+    </script>
+</body>
+</html>
