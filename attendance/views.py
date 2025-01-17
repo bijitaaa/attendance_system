@@ -139,16 +139,16 @@ def register_student(request):
                 # Check if the student already exists
                 student, created = Student.objects.get_or_create(rollno=rollno, defaults=form.cleaned_data)
                 if not created:
-                    messages.info(request, f"Student {student.name} already exists. Adding the subject.")
+                    messages.info(request, f"Student {student.name} already exists. Adding the subjects.")
             except Exception as e:
                 messages.error(request, f"Error while checking/creating student: {str(e)}")
                 return redirect('register_student')
 
-            # Add the teacher's subject to the student's subjects
-            student.subjects.add(teacher.subject)
+            # Add the teacher's subjects to the student's subjects
+            student.subjects.add(*teacher.subjects.all())  # Add all subjects
             student.save()  # Save again to update ManyToMany relationship
 
-            messages.success(request, f"Student {student.name} has been successfully registered under {teacher.subject.name}!")
+            messages.success(request, f"Student {student.name} has been successfully registered under the teacher's subjects!")
             return redirect('teacher_dashboard')  # Redirect to the teacher dashboard
 
         else:
@@ -164,8 +164,10 @@ def register_student(request):
 
 
 
+
 def view_attendance(request):
     teacher_id = request.session.get('teacher_id')  # Fetch the logged-in teacher's ID
+    print(teacher_id)
     if not teacher_id:
         return redirect('teacher_login')
 
@@ -186,6 +188,7 @@ def view_attendance(request):
 def view_attendance_by_subject(request):
     # Fetch the logged-in teacher's ID from the session
     teacher_id = request.session.get('teacher_id')
+    print(teacher_id)
     if not teacher_id:
         return redirect('teacher_login')  # Redirect to login if teacher is not logged in
 
@@ -194,6 +197,7 @@ def view_attendance_by_subject(request):
 
     # Get the subjects taught by the teacher
     subjects_taught = teacher.subjects.all()
+    print(subjects_taught)
 
     # Initialize a dictionary to hold attendance by subject and date
     attendance_by_subject = defaultdict(lambda: defaultdict(list))
@@ -202,13 +206,15 @@ def view_attendance_by_subject(request):
     for subject in subjects_taught:
         # Get the students who are enrolled in this subject
         students = Student.objects.filter(subjects=subject)
-
+        print(students)
         # Get the attendance records for those students, ordered by date
         attendance_records = Attendance.objects.filter(student__in=students, subject=subject).order_by('-date')
+        print(attendance_records)
 
         # Group the attendance records by subject and date
         for record in attendance_records:
             attendance_by_subject[subject.name][record.date].append(record)
+        print(attendance_by_subject)
 
     # Pass the attendance data to the template
     return render(request, 'attendance_by_subject.html', {
